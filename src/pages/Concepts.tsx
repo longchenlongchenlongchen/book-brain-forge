@@ -1,20 +1,28 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { ArrowLeft, BookOpen, ChevronRight } from "lucide-react";
+import { ArrowLeft, BookOpen, ZoomIn, ZoomOut, Maximize2 } from "lucide-react";
 import { toast } from "sonner";
 import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@/components/ui/collapsible";
+  ReactFlow,
+  Node,
+  Edge,
+  Background,
+  Controls,
+  MiniMap,
+  useNodesState,
+  useEdgesState,
+  ConnectionLineType,
+} from "@xyflow/react";
+import "@xyflow/react/dist/style.css";
 
 interface SubConcept {
   id: string;
   title: string;
   description: string | null;
+  parent_id: string;
 }
 
 interface MainConcept {
@@ -24,13 +32,32 @@ interface MainConcept {
   subConcepts: SubConcept[];
 }
 
+const nodeTypes = {
+  mainConcept: ({ data }: { data: any }) => (
+    <div className="px-6 py-4 shadow-lg rounded-lg bg-gradient-primary text-white border-2 border-primary min-w-[250px]">
+      <div className="font-bold text-lg mb-2">{data.label}</div>
+      {data.description && (
+        <div className="text-sm opacity-90 line-clamp-3">{data.description}</div>
+      )}
+    </div>
+  ),
+  subConcept: ({ data }: { data: any }) => (
+    <div className="px-4 py-3 shadow-md rounded-lg bg-card border-2 border-border min-w-[200px]">
+      <div className="font-semibold text-sm mb-1">{data.label}</div>
+      {data.description && (
+        <div className="text-xs text-muted-foreground line-clamp-2">{data.description}</div>
+      )}
+    </div>
+  ),
+};
+
 export default function Concepts() {
   const { bookId } = useParams<{ bookId: string }>();
   const navigate = useNavigate();
-  const [concepts, setConcepts] = useState<MainConcept[]>([]);
   const [bookTitle, setBookTitle] = useState("");
   const [isLoading, setIsLoading] = useState(true);
-  const [openConcepts, setOpenConcepts] = useState<Set<string>>(new Set());
+  const [nodes, setNodes, onNodesChange] = useNodesState([]);
+  const [edges, setEdges, onEdgesChange] = useEdgesState([]);
 
   useEffect(() => {
     checkAuth();
@@ -66,55 +93,66 @@ export default function Concepts() {
 
       if (conceptsError) throw conceptsError;
 
-      // Organize into hierarchy
-      const mainConcepts: MainConcept[] = [];
-      const conceptsMap = new Map<string, MainConcept>();
+      // Transform to React Flow nodes and edges
+      const flowNodes: Node[] = [];
+      const flowEdges: Edge[] = [];
+      
+      const mainConcepts = conceptsData.filter(c => c.level === 1);
+      const subConcepts = conceptsData.filter(c => c.level === 2);
 
-      conceptsData.forEach((concept) => {
-        if (concept.level === 1) {
-          const mainConcept: MainConcept = {
-            id: concept.id,
-            title: concept.title,
-            description: concept.description,
-            subConcepts: [],
-          };
-          mainConcepts.push(mainConcept);
-          conceptsMap.set(concept.id, mainConcept);
-        }
+      // Calculate layout positions
+      const horizontalSpacing = 400;
+      const verticalSpacing = 200;
+      const mainConceptY = 100;
+      const subConceptY = mainConceptY + verticalSpacing;
+
+      // Add main concepts
+      mainConcepts.forEach((concept, index) => {
+        const x = index * horizontalSpacing + 100;
+        flowNodes.push({
+          id: concept.id,
+          type: 'mainConcept',
+          position: { x, y: mainConceptY },
+          data: { 
+            label: concept.title,
+            description: concept.description
+          },
+        });
+
+        // Add sub-concepts for this main concept
+        const relatedSubConcepts = subConcepts.filter(sc => sc.parent_id === concept.id);
+        relatedSubConcepts.forEach((subConcept, subIndex) => {
+          const subX = x + (subIndex - (relatedSubConcepts.length - 1) / 2) * 250;
+          flowNodes.push({
+            id: subConcept.id,
+            type: 'subConcept',
+            position: { x: subX, y: subConceptY },
+            data: { 
+              label: subConcept.title,
+              description: subConcept.description
+            },
+          });
+
+          // Add edge connecting main concept to sub-concept
+          flowEdges.push({
+            id: `${concept.id}-${subConcept.id}`,
+            source: concept.id,
+            target: subConcept.id,
+            type: ConnectionLineType.Bezier,
+            animated: true,
+            style: { stroke: 'hsl(var(--primary))', strokeWidth: 2 },
+          });
+        });
       });
 
-      conceptsData.forEach((concept) => {
-        if (concept.level === 2 && concept.parent_id) {
-          const parent = conceptsMap.get(concept.parent_id);
-          if (parent) {
-            parent.subConcepts.push({
-              id: concept.id,
-              title: concept.title,
-              description: concept.description,
-            });
-          }
-        }
-      });
-
-      setConcepts(mainConcepts);
+      setNodes(flowNodes);
+      setEdges(flowEdges);
     } catch (error: any) {
       toast.error("Failed to load concepts");
       console.error(error);
     } finally {
       setIsLoading(false);
     }
-  };
-
-  const toggleConcept = (conceptId: string) => {
-    setOpenConcepts((prev) => {
-      const next = new Set(prev);
-      if (next.has(conceptId)) {
-        next.delete(conceptId);
-      } else {
-        next.add(conceptId);
-      }
-      return next;
-    });
   };
 
   if (isLoading) {
@@ -148,7 +186,7 @@ export default function Concepts() {
       </header>
 
       <main className="container mx-auto px-4 py-8">
-        {concepts.length === 0 ? (
+        {nodes.length === 0 ? (
           <Card className="bg-gradient-card border-border/50">
             <CardContent className="text-center py-12">
               <BookOpen className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
@@ -161,58 +199,29 @@ export default function Concepts() {
             </CardContent>
           </Card>
         ) : (
-          <div className="space-y-4">
-            {concepts.map((concept, index) => (
-              <Card
-                key={concept.id}
-                className="bg-gradient-card border-border/50 overflow-hidden"
-              >
-                <Collapsible
-                  open={openConcepts.has(concept.id)}
-                  onOpenChange={() => toggleConcept(concept.id)}
-                >
-                  <CollapsibleTrigger className="w-full">
-                    <div className="p-6 flex items-start gap-4 hover:bg-accent/5 transition-colors">
-                      <div className="flex-shrink-0 w-10 h-10 rounded-full bg-gradient-primary flex items-center justify-center text-white font-bold shadow-glow-purple">
-                        {index + 1}
-                      </div>
-                      <div className="flex-1 text-left">
-                        <h2 className="text-xl font-semibold mb-2">
-                          {concept.title}
-                        </h2>
-                        {concept.description && (
-                          <p className="text-muted-foreground">
-                            {concept.description}
-                          </p>
-                        )}
-                      </div>
-                      <ChevronRight
-                        className={`w-5 h-5 text-muted-foreground transition-transform ${
-                          openConcepts.has(concept.id) ? "rotate-90" : ""
-                        }`}
-                      />
-                    </div>
-                  </CollapsibleTrigger>
-                  <CollapsibleContent>
-                    <div className="px-6 pb-6 space-y-3">
-                      {concept.subConcepts.map((subConcept) => (
-                        <div
-                          key={subConcept.id}
-                          className="ml-14 p-4 rounded-lg bg-background/50 border border-border/50"
-                        >
-                          <h3 className="font-medium mb-1">{subConcept.title}</h3>
-                          {subConcept.description && (
-                            <p className="text-sm text-muted-foreground">
-                              {subConcept.description}
-                            </p>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  </CollapsibleContent>
-                </Collapsible>
-              </Card>
-            ))}
+          <div className="h-[calc(100vh-12rem)] rounded-lg border-2 border-border/50 bg-card/50 overflow-hidden">
+            <ReactFlow
+              nodes={nodes}
+              edges={edges}
+              onNodesChange={onNodesChange}
+              onEdgesChange={onEdgesChange}
+              nodeTypes={nodeTypes}
+              fitView
+              minZoom={0.1}
+              maxZoom={1.5}
+              defaultViewport={{ x: 0, y: 0, zoom: 0.8 }}
+              connectionLineType={ConnectionLineType.Bezier}
+            >
+              <Background />
+              <Controls />
+              <MiniMap 
+                nodeColor={(node) => {
+                  if (node.type === 'mainConcept') return 'hsl(var(--primary))';
+                  return 'hsl(var(--muted))';
+                }}
+                className="bg-background border border-border"
+              />
+            </ReactFlow>
           </div>
         )}
       </main>
