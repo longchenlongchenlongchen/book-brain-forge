@@ -190,6 +190,39 @@ export type Database = {
           },
         ]
       }
+      deck_sessions: {
+        Row: {
+          cards_completed: number
+          completed_at: string
+          created_at: string
+          deck_id: string
+          id: string
+          score: number | null
+          session_type: string
+          user_id: string
+        }
+        Insert: {
+          cards_completed?: number
+          completed_at?: string
+          created_at?: string
+          deck_id: string
+          id?: string
+          score?: number | null
+          session_type: string
+          user_id: string
+        }
+        Update: {
+          cards_completed?: number
+          completed_at?: string
+          created_at?: string
+          deck_id?: string
+          id?: string
+          score?: number | null
+          session_type?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       decks: {
         Row: {
           book_id: string

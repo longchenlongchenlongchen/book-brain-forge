@@ -101,6 +101,20 @@ export default function Review() {
         setCurrentIndex(currentIndex + 1);
         setShowAnswer(false);
       } else {
+        // Save deck session completion
+        try {
+          if (deckId) {
+            await supabase.from("deck_sessions").insert({
+              user_id: user.id,
+              deck_id: deckId,
+              session_type: "review",
+              cards_completed: cards.length,
+            });
+          }
+        } catch (sessionError) {
+          console.error("Failed to save session completion:", sessionError);
+        }
+        
         toast.success("Review session complete!");
         navigate(bookId ? `/books/${bookId}` : "/dashboard");
       }

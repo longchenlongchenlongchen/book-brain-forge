@@ -116,13 +116,31 @@ export default function Quiz() {
     }
   };
 
-  const handleNext = () => {
+  const handleNext = async () => {
     if (currentIndex < cards.length - 1) {
       setCurrentIndex(currentIndex + 1);
       setSelectedAnswer(null);
       setShowResult(false);
     } else {
-      toast.success(`Quiz complete! Score: ${score + (selectedAnswer === cards[currentIndex].answer ? 1 : 0)}/${cards.length}`);
+      const finalScore = score + (selectedAnswer === cards[currentIndex].answer ? 1 : 0);
+      
+      // Save deck session completion
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user && deckId) {
+          await supabase.from("deck_sessions").insert({
+            user_id: user.id,
+            deck_id: deckId,
+            session_type: "quiz",
+            cards_completed: cards.length,
+            score: finalScore,
+          });
+        }
+      } catch (error) {
+        console.error("Failed to save session completion:", error);
+      }
+      
+      toast.success(`Quiz complete! Score: ${finalScore}/${cards.length}`);
       navigate(bookId ? `/books/${bookId}` : "/dashboard");
     }
   };
