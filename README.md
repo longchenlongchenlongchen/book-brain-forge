@@ -66,10 +66,34 @@ npm install
 ```
 
 3. **Environment Setup**
-The project uses Lovable Cloud, so environment variables are automatically configured. If running locally, ensure you have:
-- `VITE_SUPABASE_URL`
-- `VITE_SUPABASE_PUBLISHABLE_KEY`
-- `VITE_SUPABASE_PROJECT_ID`
+
+This project uses Lovable Cloud for backend services. To run locally:
+
+**Option A: Connect to Lovable Cloud (Recommended)**
+- The project is pre-configured with Lovable Cloud
+- Environment variables are automatically provided when running through Lovable
+- No additional setup needed if using Lovable development environment
+
+**Option B: Local Development Setup**
+
+If running outside of Lovable, you'll need to configure environment variables:
+
+1. Create a `.env` file in the project root:
+```bash
+VITE_SUPABASE_URL=your_supabase_url
+VITE_SUPABASE_PUBLISHABLE_KEY=your_publishable_key
+VITE_SUPABASE_PROJECT_ID=your_project_id
+```
+
+2. Get your credentials:
+   - Open your project in [Lovable](https://lovable.dev/projects/453f4c28-b2c8-4b06-8f59-58725a306f55)
+   - Navigate to Project Settings > Backend
+   - Copy the connection details
+
+**Important Notes:**
+- The `.env` file is gitignored and should never be committed
+- For production deployments, use Lovable's built-in deployment which handles environment variables automatically
+- Edge functions require additional Supabase CLI setup for local testing
 
 4. **Start the development server**
 ```bash
@@ -77,6 +101,32 @@ npm run dev
 ```
 
 The application will be available at `http://localhost:8080`
+
+### Local Edge Functions Development (Optional)
+
+To test edge functions locally, you'll need the Supabase CLI:
+
+1. **Install Supabase CLI**
+```bash
+npm install -g supabase
+```
+
+2. **Link to your project**
+```bash
+supabase link --project-ref bmjodfentjzgocqdpbje
+```
+
+3. **Start local Supabase**
+```bash
+supabase start
+```
+
+4. **Serve edge functions locally**
+```bash
+supabase functions serve
+```
+
+**Note**: Local edge function testing requires additional secrets configuration. See the [Lovable documentation](https://docs.lovable.dev/features/cloud) for details.
 
 ### Building for Production
 
