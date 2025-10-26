@@ -58,6 +58,9 @@ export default function Concepts() {
   const [isLoading, setIsLoading] = useState(true);
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
+  const [currentConceptIndex, setCurrentConceptIndex] = useState(0);
+  const [totalConcepts, setTotalConcepts] = useState(0);
+  const [allNodesData, setAllNodesData] = useState<{ nodes: Node[]; edges: Edge[] }[]>([]);
 
   useEffect(() => {
     checkAuth();
@@ -93,26 +96,26 @@ export default function Concepts() {
 
       if (conceptsError) throw conceptsError;
 
-      // Transform to React Flow nodes and edges
-      const flowNodes: Node[] = [];
-      const flowEdges: Edge[] = [];
+      // Transform to React Flow nodes and edges - one diagram per main concept
+      const allDiagramsData: { nodes: Node[]; edges: Edge[] }[] = [];
       
       const mainConcepts = conceptsData.filter(c => c.level === 1);
       const subConcepts = conceptsData.filter(c => c.level === 2);
 
-      // Calculate layout positions
-      const horizontalSpacing = 1200;
-      const verticalSpacing = 600;
-      const mainConceptY = 50;
-      const subConceptY = mainConceptY + verticalSpacing;
+      // Create separate diagram for each main concept
+      mainConcepts.forEach((concept, mainIndex) => {
+        const flowNodes: Node[] = [];
+        const flowEdges: Edge[] = [];
 
-      // Add main concepts
-      mainConcepts.forEach((concept, index) => {
-        const x = index * horizontalSpacing + 100;
+        // Center position for main concept
+        const mainConceptX = 400;
+        const mainConceptY = 100;
+
+        // Add main concept node
         flowNodes.push({
           id: concept.id,
           type: 'mainConcept',
-          position: { x, y: mainConceptY },
+          position: { x: mainConceptX, y: mainConceptY },
           data: { 
             label: concept.title,
             description: concept.description
@@ -121,8 +124,14 @@ export default function Concepts() {
 
         // Add sub-concepts for this main concept
         const relatedSubConcepts = subConcepts.filter(sc => sc.parent_id === concept.id);
+        const subConceptY = mainConceptY + 600;
+        
         relatedSubConcepts.forEach((subConcept, subIndex) => {
-          const subX = x + (subIndex - (relatedSubConcepts.length - 1) / 2) * 750;
+          // Distribute sub-concepts horizontally around center
+          const totalSubs = relatedSubConcepts.length;
+          const startX = mainConceptX - ((totalSubs - 1) * 750) / 2;
+          const subX = startX + (subIndex * 750);
+          
           flowNodes.push({
             id: subConcept.id,
             type: 'subConcept',
@@ -143,15 +152,41 @@ export default function Concepts() {
             style: { stroke: 'hsl(var(--primary))', strokeWidth: 6 },
           });
         });
+
+        allDiagramsData.push({ nodes: flowNodes, edges: flowEdges });
       });
 
-      setNodes(flowNodes);
-      setEdges(flowEdges);
+      setAllNodesData(allDiagramsData);
+      setTotalConcepts(mainConcepts.length);
+      
+      // Set initial diagram
+      if (allDiagramsData.length > 0) {
+        setNodes(allDiagramsData[0].nodes);
+        setEdges(allDiagramsData[0].edges);
+      }
     } catch (error: any) {
       toast.error("Failed to load concepts");
       console.error(error);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handlePreviousConcept = () => {
+    const newIndex = Math.max(0, currentConceptIndex - 1);
+    setCurrentConceptIndex(newIndex);
+    if (allNodesData[newIndex]) {
+      setNodes(allNodesData[newIndex].nodes);
+      setEdges(allNodesData[newIndex].edges);
+    }
+  };
+
+  const handleNextConcept = () => {
+    const newIndex = Math.min(totalConcepts - 1, currentConceptIndex + 1);
+    setCurrentConceptIndex(newIndex);
+    if (allNodesData[newIndex]) {
+      setNodes(allNodesData[newIndex].nodes);
+      setEdges(allNodesData[newIndex].edges);
     }
   };
 
@@ -182,6 +217,29 @@ export default function Concepts() {
             <h1 className="text-2xl font-bold">Key Concepts</h1>
             <p className="text-muted-foreground">{bookTitle}</p>
           </div>
+          {totalConcepts > 1 && (
+            <div className="flex items-center gap-3">
+              <Button
+                variant="outline"
+                onClick={handlePreviousConcept}
+                disabled={currentConceptIndex === 0}
+                size="sm"
+              >
+                Previous
+              </Button>
+              <span className="text-sm text-muted-foreground whitespace-nowrap">
+                Concept {currentConceptIndex + 1} of {totalConcepts}
+              </span>
+              <Button
+                variant="outline"
+                onClick={handleNextConcept}
+                disabled={currentConceptIndex === totalConcepts - 1}
+                size="sm"
+              >
+                Next
+              </Button>
+            </div>
+          )}
         </div>
       </header>
 
