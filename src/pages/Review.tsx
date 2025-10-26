@@ -234,7 +234,10 @@ export default function Review() {
           {/* Controls */}
           {!showAnswer ? (
             <Button
-              onClick={() => setShowAnswer(true)}
+              onClick={() => {
+                setShowAnswer(true);
+                setReviewedCards(prev => new Set(prev).add(currentIndex));
+              }}
               className="w-full bg-gradient-primary hover:opacity-90 shadow-glow-blue"
               size="lg"
             >
