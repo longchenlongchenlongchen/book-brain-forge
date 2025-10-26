@@ -45,11 +45,20 @@ export default function Dashboard() {
     try {
       const { data, error } = await supabase
         .from("books")
-        .select("*")
+        .select(`
+          *,
+          materials:materials(count)
+        `)
         .order("created_at", { ascending: false });
 
       if (error) throw error;
-      setBooks(data || []);
+      
+      const booksWithCount = (data || []).map((book: any) => ({
+        ...book,
+        material_count: book.materials[0]?.count || 0,
+      }));
+      
+      setBooks(booksWithCount);
     } catch (error: any) {
       toast.error("Failed to load books");
     } finally {
