@@ -38,12 +38,9 @@ serve(async (req) => {
     if (downloadError) throw downloadError;
     console.log('PDF downloaded, size:', pdfData.size);
 
-    // Parse PDF using document parser
-    const arrayBuffer = await pdfData.arrayBuffer();
-    const base64Data = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
-    
+    // Parse PDF - for now using mock text
+    // In production, integrate a PDF parsing library that works in Deno
     console.log('Parsing PDF...');
-    // For now, we'll create mock chunks - in production, use a PDF parsing library
     const mockText = `This is sample text from ${material.filename}. 
     
     Chapter 1: Introduction

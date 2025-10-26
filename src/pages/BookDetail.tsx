@@ -3,8 +3,19 @@ import { useNavigate, useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Brain, ArrowLeft, Upload, Sparkles, FileText, Play } from "lucide-react";
+import { Brain, ArrowLeft, Upload, Sparkles, FileText, Play, Trash2 } from "lucide-react";
 import { toast } from "sonner";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { PdfUpload } from "@/components/PdfUpload";
 import { Progress } from "@/components/ui/progress";
 
@@ -18,6 +29,7 @@ interface Material {
   id: string;
   filename: string;
   pages: number;
+  storage_path: string;
   created_at: string;
 }
 
@@ -123,6 +135,30 @@ export default function BookDetail() {
     }
   };
 
+  const handleDeleteMaterial = async (materialId: string, storagePath: string) => {
+    try {
+      // Delete from storage
+      const { error: storageError } = await supabase.storage
+        .from("pdfs")
+        .remove([storagePath]);
+
+      if (storageError) throw storageError;
+
+      // Delete from database
+      const { error: dbError } = await supabase
+        .from("materials")
+        .delete()
+        .eq("id", materialId);
+
+      if (dbError) throw dbError;
+
+      toast.success("PDF deleted successfully");
+      fetchBookData();
+    } catch (error: any) {
+      toast.error(error.message || "Failed to delete PDF");
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5 flex items-center justify-center">
@@ -191,6 +227,30 @@ export default function BookDetail() {
                         <p className="text-xs text-muted-foreground">{material.pages} pages</p>
                       </div>
                     </div>
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive">
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Delete PDF?</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            This will permanently delete "{material.filename}" and all associated content. This action cannot be undone.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancel</AlertDialogCancel>
+                          <AlertDialogAction
+                            onClick={() => handleDeleteMaterial(material.id, material.storage_path)}
+                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                          >
+                            Delete
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
                   </div>
                 ))}
               </div>
