@@ -38,8 +38,14 @@ serve(async (req) => {
     if (downloadError) throw downloadError;
     console.log('PDF downloaded, size:', pdfData.size);
 
-    // Basic page estimate fallback (until real parser is wired)
-    const pagesToUpdate = Math.max(1, Math.round(pdfData.size / 500_000));
+    // Heuristic page detection from PDF structure
+    const arrayBuffer = await pdfData.arrayBuffer();
+    const pdfText = new TextDecoder('latin1').decode(arrayBuffer);
+    const pagesByType = (pdfText.match(/\/Type\s*\/Page\b/g) || []).length; // counts individual page objects
+    const countMatches = Array.from(pdfText.matchAll(/\/Count\s+(\d+)/g)).map((m) => parseInt(m[1]));
+    const pagesByCount = countMatches.length ? Math.max(...countMatches) : 0; // page tree counts
+    const pagesToUpdate = Math.max(1, pagesByType, pagesByCount);
+    console.log('Page detection -> byType:', pagesByType, 'byCount:', pagesByCount, 'final:', pagesToUpdate);
 
     // Parse and chunk - using mock text placeholder for now
     console.log('Parsing PDF...');
