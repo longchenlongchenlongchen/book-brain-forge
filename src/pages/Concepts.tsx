@@ -34,18 +34,18 @@ interface MainConcept {
 
 const nodeTypes = {
   mainConcept: ({ data }: { data: any }) => (
-    <div className="px-6 py-4 shadow-lg rounded-lg bg-gradient-primary text-white border-2 border-primary min-w-[250px]">
-      <div className="font-bold text-lg mb-2">{data.label}</div>
+    <div className="px-8 py-6 shadow-2xl rounded-xl bg-gradient-primary text-white border-4 border-primary min-w-[350px] max-w-[450px]">
+      <div className="font-bold text-2xl mb-3">{data.label}</div>
       {data.description && (
-        <div className="text-sm opacity-90 line-clamp-3">{data.description}</div>
+        <div className="text-base opacity-95 line-clamp-4">{data.description}</div>
       )}
     </div>
   ),
   subConcept: ({ data }: { data: any }) => (
-    <div className="px-4 py-3 shadow-md rounded-lg bg-card border-2 border-border min-w-[200px]">
-      <div className="font-semibold text-sm mb-1">{data.label}</div>
+    <div className="px-6 py-4 shadow-xl rounded-lg bg-card border-3 border-border min-w-[280px] max-w-[350px]">
+      <div className="font-semibold text-lg mb-2">{data.label}</div>
       {data.description && (
-        <div className="text-xs text-muted-foreground line-clamp-2">{data.description}</div>
+        <div className="text-sm text-muted-foreground line-clamp-3">{data.description}</div>
       )}
     </div>
   ),
@@ -101,9 +101,9 @@ export default function Concepts() {
       const subConcepts = conceptsData.filter(c => c.level === 2);
 
       // Calculate layout positions
-      const horizontalSpacing = 400;
-      const verticalSpacing = 200;
-      const mainConceptY = 100;
+      const horizontalSpacing = 600;
+      const verticalSpacing = 300;
+      const mainConceptY = 50;
       const subConceptY = mainConceptY + verticalSpacing;
 
       // Add main concepts
@@ -122,7 +122,7 @@ export default function Concepts() {
         // Add sub-concepts for this main concept
         const relatedSubConcepts = subConcepts.filter(sc => sc.parent_id === concept.id);
         relatedSubConcepts.forEach((subConcept, subIndex) => {
-          const subX = x + (subIndex - (relatedSubConcepts.length - 1) / 2) * 250;
+          const subX = x + (subIndex - (relatedSubConcepts.length - 1) / 2) * 350;
           flowNodes.push({
             id: subConcept.id,
             type: 'subConcept',
@@ -140,7 +140,7 @@ export default function Concepts() {
             target: subConcept.id,
             type: ConnectionLineType.Bezier,
             animated: true,
-            style: { stroke: 'hsl(var(--primary))', strokeWidth: 2 },
+            style: { stroke: 'hsl(var(--primary))', strokeWidth: 3 },
           });
         });
       });
@@ -207,9 +207,9 @@ export default function Concepts() {
               onEdgesChange={onEdgesChange}
               nodeTypes={nodeTypes}
               fitView
-              minZoom={0.1}
-              maxZoom={1.5}
-              defaultViewport={{ x: 0, y: 0, zoom: 0.8 }}
+              minZoom={0.3}
+              maxZoom={2}
+              defaultViewport={{ x: 0, y: 0, zoom: 1 }}
               connectionLineType={ConnectionLineType.Bezier}
             >
               <Background />
