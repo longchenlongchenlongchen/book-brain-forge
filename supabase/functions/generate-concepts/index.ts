@@ -33,7 +33,7 @@ serve(async (req) => {
     // Combine chunks into context
     const context = chunks.map(c => c.text).join('\n\n');
 
-    // Call Lovable AI to generate key concepts
+    // Call Lovable AI to generate key concepts with enhanced prompts
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
     const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
@@ -42,27 +42,45 @@ serve(async (req) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'google/gemini-2.5-flash',
+        model: 'google/gemini-2.5-pro',
         messages: [
           {
             role: 'system',
-            content: 'You are an expert at analyzing educational content and extracting key concepts in a hierarchical structure.'
+            content: `You are an expert educational content analyst specializing in knowledge structure and curriculum design.
+
+Your task is to create a comprehensive, hierarchical concept map that:
+1. Identifies the core themes and organizing principles of the content
+2. Structures knowledge from foundational to advanced concepts
+3. Shows logical relationships and dependencies between concepts
+4. Provides clear, instructive descriptions for each concept
+
+Guidelines:
+- Extract 5-8 main concepts that represent major themes or domains
+- For each main concept, identify 2-4 sub-concepts that elaborate or specify
+- Descriptions should be clear, educational, and provide context
+- Use consistent terminology from the source material
+- Order concepts logically (e.g., prerequisites before advanced topics)
+- Avoid redundancy between concepts
+
+Format: Return ONLY a valid JSON array with this structure.`
           },
           {
             role: 'user',
-            content: `Analyze this content and extract 5-8 main key concepts, with 2-4 sub-concepts for each main concept. Format as JSON array:
+            content: `Analyze this educational content and extract a hierarchical structure of key concepts. Create a comprehensive concept map with main concepts and their sub-concepts:
+
+Required JSON format:
 [{
-  "title": "Main Concept Title",
-  "description": "Brief description",
+  "title": "Clear, concise main concept title (2-6 words)",
+  "description": "Detailed description explaining what this concept covers, its importance, and key characteristics (50-100 words)",
   "subConcepts": [
     {
-      "title": "Sub-concept Title",
-      "description": "Brief description"
+      "title": "Specific sub-concept title",
+      "description": "Clear explanation of this aspect, including how it relates to the main concept (30-60 words)"
     }
   ]
 }]
 
-Content:
+Content to analyze:
 ${context.slice(0, 15000)}`
           }
         ],

@@ -59,20 +59,30 @@ serve(async (req) => {
 
     console.log(`Found ${chunks.length} chunks to work with`);
 
-    // Generate flashcards using AI
-    const systemPrompt = `You are an expert educational content creator. Generate flashcards from the provided text.
-Each flashcard should:
-- Have a clear, focused question
-- Provide a concise but complete answer
-- Be based on key concepts from the text
-- Include the source chunk IDs for citation
+    // Generate flashcards using AI with enhanced prompts
+    const systemPrompt = `You are an expert educational content creator specializing in effective learning materials using evidence-based pedagogical principles.
+
+Generate high-quality flashcards that:
+1. Focus on ONE key concept per card (atomic principle)
+2. Use clear, precise language without ambiguity
+3. Ask questions that test understanding, not just recall
+4. Provide comprehensive answers that explain the "why" and "how"
+5. Progressive difficulty: start with fundamentals, build to complex concepts
+6. Include practical examples or applications where relevant
+7. Use active recall triggers (e.g., "Explain...", "How does...", "What is the relationship between...")
+
+Quality criteria:
+- Questions should be answerable from the provided context alone
+- Avoid yes/no questions; prefer open-ended questions
+- Difficulty scale: 1=basic definition, 3=understanding/application, 5=analysis/synthesis
+- Cite source chunks for traceability
 
 Return ONLY valid JSON in this exact format:
 {
   "flashcards": [
     {
-      "question": "What is...",
-      "answer": "...",
+      "question": "Clear, specific question that tests understanding",
+      "answer": "Complete answer with explanation and context",
       "difficulty": 3,
       "sourceChunkIds": ["chunk-id-1", "chunk-id-2"]
     }
@@ -80,7 +90,7 @@ Return ONLY valid JSON in this exact format:
 }`;
 
     const context = chunks.map(c => `[Chunk ${c.id}]: ${c.text}`).join('\n\n');
-    const prompt = `Generate ${count} flashcards from this content:\n\n${context}`;
+    const prompt = `Generate ${count} high-quality flashcards from this educational content. Ensure variety in question types and progressive difficulty:\n\n${context}`;
 
     const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
@@ -89,12 +99,13 @@ Return ONLY valid JSON in this exact format:
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'google/gemini-2.5-flash',
+        model: 'google/gemini-2.5-pro',
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: prompt }
         ],
-        response_format: { type: 'json_object' }
+        response_format: { type: 'json_object' },
+        temperature: 0.7
       }),
     });
 
