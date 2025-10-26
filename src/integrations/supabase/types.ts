@@ -149,6 +149,47 @@ export type Database = {
           },
         ]
       }
+      concepts: {
+        Row: {
+          book_id: string
+          created_at: string
+          description: string | null
+          id: string
+          level: number
+          order_index: number
+          parent_id: string | null
+          title: string
+        }
+        Insert: {
+          book_id: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          level?: number
+          order_index?: number
+          parent_id?: string | null
+          title: string
+        }
+        Update: {
+          book_id?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          level?: number
+          order_index?: number
+          parent_id?: string | null
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "concepts_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "concepts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       decks: {
         Row: {
           book_id: string

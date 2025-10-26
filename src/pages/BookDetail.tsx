@@ -3,7 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Brain, ArrowLeft, Upload, Sparkles, FileText, Play, Trash2 } from "lucide-react";
+import { Brain, ArrowLeft, Upload, Sparkles, FileText, Play, Trash2, BookOpen } from "lucide-react";
 import { toast } from "sonner";
 import {
   AlertDialog,
@@ -47,6 +47,7 @@ export default function BookDetail() {
   const [materials, setMaterials] = useState<Material[]>([]);
   const [decks, setDecks] = useState<Deck[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [conceptCount, setConceptCount] = useState(0);
 
   useEffect(() => {
     checkAuth();
@@ -107,6 +108,14 @@ export default function BookDetail() {
       );
       
       setDecks(decksWithCounts);
+
+      // Fetch concept count
+      const { count: conceptsCount } = await supabase
+        .from("concepts")
+        .select("*", { count: "exact", head: true })
+        .eq("book_id", bookId);
+      
+      setConceptCount(conceptsCount || 0);
     } catch (error: any) {
       toast.error("Failed to load book data");
     } finally {
@@ -153,6 +162,28 @@ export default function BookDetail() {
       fetchBookData();
     } catch (error: any) {
       toast.error(error.message || "Failed to generate quiz questions");
+    }
+  };
+
+  const handleGenerateConcepts = async () => {
+    if (!materials.length) {
+      toast.error("Please upload a PDF first");
+      return;
+    }
+
+    toast.info("Generating key concepts...", { duration: 2000 });
+    
+    try {
+      const { data, error } = await supabase.functions.invoke("generate-concepts", {
+        body: { bookId },
+      });
+
+      if (error) throw error;
+      toast.success(`Generated ${data.conceptCount || 0} key concepts!`);
+      fetchBookData();
+      navigate(`/concepts/${bookId}`);
+    } catch (error: any) {
+      toast.error(error.message || "Failed to generate key concepts");
     }
   };
 
@@ -291,11 +322,11 @@ export default function BookDetail() {
             <p className="text-muted-foreground">
               Use AI to automatically generate flashcards and multiple-choice questions from your uploaded materials.
             </p>
-            <div className="flex gap-3">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
               <Button
                 onClick={handleGenerateFlashcards}
                 disabled={!materials.length}
-                className="flex-1 bg-gradient-primary hover:opacity-90 shadow-glow-purple"
+                className="bg-gradient-primary hover:opacity-90 shadow-glow-purple"
               >
                 <Sparkles className="w-4 h-4 mr-2" />
                 Generate Flashcards
@@ -303,14 +334,38 @@ export default function BookDetail() {
               <Button
                 onClick={handleGenerateMCQ}
                 disabled={!materials.length}
-                className="flex-1 bg-gradient-primary hover:opacity-90 shadow-glow-blue"
+                className="bg-gradient-primary hover:opacity-90 shadow-glow-blue"
               >
                 <Sparkles className="w-4 h-4 mr-2" />
                 Generate Quiz
               </Button>
+              <Button
+                onClick={handleGenerateConcepts}
+                disabled={!materials.length}
+                className="bg-gradient-primary hover:opacity-90 shadow-glow-purple"
+              >
+                <BookOpen className="w-4 h-4 mr-2" />
+                Generate Concepts
+              </Button>
             </div>
           </CardContent>
         </Card>
+
+        {/* Key Concepts */}
+        {conceptCount > 0 && (
+          <Card className="bg-gradient-card border-border/50">
+            <CardContent className="p-6">
+              <Button
+                onClick={() => navigate(`/concepts/${bookId}`)}
+                className="w-full bg-gradient-primary hover:opacity-90 shadow-glow-purple"
+                size="lg"
+              >
+                <BookOpen className="w-5 h-5 mr-2" />
+                View Key Concepts Structure ({conceptCount})
+              </Button>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Study Decks */}
         {decks.length > 0 && (
