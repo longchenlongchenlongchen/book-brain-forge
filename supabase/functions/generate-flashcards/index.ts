@@ -117,6 +117,19 @@ Return ONLY valid JSON in this exact format:
       throw new Error('Invalid AI response format');
     }
 
+    // Helper to extract valid UUIDs from AI response
+    const extractUUIDs = (ids: any[]): string[] => {
+      if (!Array.isArray(ids)) return [];
+      return ids
+        .map(id => {
+          if (typeof id !== 'string') return null;
+          // Extract UUID pattern (8-4-4-4-12 hex digits)
+          const match = id.match(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i);
+          return match ? match[0] : null;
+        })
+        .filter(Boolean) as string[];
+    };
+
     // Insert flashcards
     const cardsToInsert = flashcardsData.flashcards.map((fc: any) => ({
       deck_id: deck.id,
@@ -125,7 +138,7 @@ Return ONLY valid JSON in this exact format:
       question: fc.question,
       answer: fc.answer,
       difficulty: fc.difficulty || 3,
-      source_chunk_ids: fc.sourceChunkIds || [],
+      source_chunk_ids: extractUUIDs(fc.sourceChunkIds || []),
       distractors: []
     }));
 
