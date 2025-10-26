@@ -34,18 +34,18 @@ interface MainConcept {
 
 const nodeTypes = {
   mainConcept: ({ data }: { data: any }) => (
-    <div className="px-8 py-6 shadow-2xl rounded-xl bg-gradient-primary text-white border-4 border-primary min-w-[350px] max-w-[450px]">
-      <div className="font-bold text-2xl mb-3">{data.label}</div>
+    <div className="px-12 py-8 shadow-2xl rounded-2xl bg-gradient-primary text-white border-4 border-primary min-w-[500px] max-w-[600px]">
+      <div className="font-bold text-3xl mb-4">{data.label}</div>
       {data.description && (
-        <div className="text-base opacity-95 line-clamp-4">{data.description}</div>
+        <div className="text-lg opacity-95 line-clamp-5">{data.description}</div>
       )}
     </div>
   ),
   subConcept: ({ data }: { data: any }) => (
-    <div className="px-6 py-4 shadow-xl rounded-lg bg-card border-3 border-border min-w-[280px] max-w-[350px]">
-      <div className="font-semibold text-lg mb-2">{data.label}</div>
+    <div className="px-8 py-6 shadow-xl rounded-xl bg-card border-3 border-border min-w-[400px] max-w-[500px]">
+      <div className="font-semibold text-xl mb-3">{data.label}</div>
       {data.description && (
-        <div className="text-sm text-muted-foreground line-clamp-3">{data.description}</div>
+        <div className="text-base text-muted-foreground line-clamp-4">{data.description}</div>
       )}
     </div>
   ),
@@ -101,8 +101,8 @@ export default function Concepts() {
       const subConcepts = conceptsData.filter(c => c.level === 2);
 
       // Calculate layout positions
-      const horizontalSpacing = 600;
-      const verticalSpacing = 300;
+      const horizontalSpacing = 800;
+      const verticalSpacing = 400;
       const mainConceptY = 50;
       const subConceptY = mainConceptY + verticalSpacing;
 
@@ -122,7 +122,7 @@ export default function Concepts() {
         // Add sub-concepts for this main concept
         const relatedSubConcepts = subConcepts.filter(sc => sc.parent_id === concept.id);
         relatedSubConcepts.forEach((subConcept, subIndex) => {
-          const subX = x + (subIndex - (relatedSubConcepts.length - 1) / 2) * 350;
+          const subX = x + (subIndex - (relatedSubConcepts.length - 1) / 2) * 500;
           flowNodes.push({
             id: subConcept.id,
             type: 'subConcept',
@@ -140,7 +140,7 @@ export default function Concepts() {
             target: subConcept.id,
             type: ConnectionLineType.Bezier,
             animated: true,
-            style: { stroke: 'hsl(var(--primary))', strokeWidth: 3 },
+            style: { stroke: 'hsl(var(--primary))', strokeWidth: 4 },
           });
         });
       });
