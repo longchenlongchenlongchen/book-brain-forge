@@ -27,6 +27,7 @@ export default function Quiz() {
   const [score, setScore] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [bookId, setBookId] = useState<string | null>(null);
+  const [answeredCards, setAnsweredCards] = useState<Map<number, boolean>>(new Map());
 
   useEffect(() => {
     checkAuth();
@@ -92,6 +93,8 @@ export default function Quiz() {
       setScore(score + 1);
     }
 
+    // Mark card as answered
+    setAnsweredCards(prev => new Map(prev).set(currentIndex, isCorrect));
     setShowResult(true);
 
     // Save review
@@ -122,6 +125,12 @@ export default function Quiz() {
       toast.success(`Quiz complete! Score: ${score + (selectedAnswer === cards[currentIndex].answer ? 1 : 0)}/${cards.length}`);
       navigate(bookId ? `/books/${bookId}` : "/dashboard");
     }
+  };
+
+  const handleNavigateToCard = (index: number) => {
+    setCurrentIndex(index);
+    setSelectedAnswer(null);
+    setShowResult(false);
   };
 
   if (isLoading) {
@@ -176,6 +185,38 @@ export default function Quiz() {
 
       <main className="container mx-auto px-4 py-8">
         <div className="max-w-2xl mx-auto space-y-6">
+          {/* Question Navigation */}
+          <Card className="bg-card/50 border-border/50">
+            <CardContent className="p-4">
+              <div className="space-y-2">
+                <h3 className="text-sm font-medium text-muted-foreground">Jump to Question:</h3>
+                <div className="flex flex-wrap gap-2">
+                  {cards.map((_, index) => {
+                    const isAnswered = answeredCards.has(index);
+                    const isCorrect = answeredCards.get(index);
+
+                    return (
+                      <button
+                        key={index}
+                        onClick={() => handleNavigateToCard(index)}
+                        className={cn(
+                          "w-10 h-10 rounded-lg border-2 transition-all text-sm font-medium",
+                          "hover:scale-105",
+                          currentIndex === index && "border-primary bg-primary text-primary-foreground",
+                          currentIndex !== index && isAnswered && isCorrect && "border-green-500 bg-green-500/10 text-green-600",
+                          currentIndex !== index && isAnswered && !isCorrect && "border-destructive bg-destructive/10 text-destructive",
+                          currentIndex !== index && !isAnswered && "border-border bg-background"
+                        )}
+                      >
+                        {index + 1}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
           {/* Progress */}
           <div className="w-full bg-muted rounded-full h-2">
             <div
