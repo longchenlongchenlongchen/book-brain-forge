@@ -135,6 +135,27 @@ export default function BookDetail() {
     }
   };
 
+  const handleGenerateMCQ = async () => {
+    if (!materials.length) {
+      toast.error("Please upload a PDF first");
+      return;
+    }
+
+    toast.info("Generating quiz questions...", { duration: 2000 });
+    
+    try {
+      const { data, error } = await supabase.functions.invoke("generate-mcq", {
+        body: { bookId, count: 10 },
+      });
+
+      if (error) throw error;
+      toast.success(`Generated ${data.cards?.length || 0} quiz questions!`);
+      fetchBookData();
+    } catch (error: any) {
+      toast.error(error.message || "Failed to generate quiz questions");
+    }
+  };
+
   const handleDeleteMaterial = async (materialId: string, storagePath: string) => {
     try {
       // Delete from storage
@@ -270,14 +291,24 @@ export default function BookDetail() {
             <p className="text-muted-foreground">
               Use AI to automatically generate flashcards and multiple-choice questions from your uploaded materials.
             </p>
-            <Button
-              onClick={handleGenerateFlashcards}
-              disabled={!materials.length}
-              className="bg-gradient-primary hover:opacity-90 shadow-glow-purple"
-            >
-              <Sparkles className="w-4 h-4 mr-2" />
-              Generate Flashcards
-            </Button>
+            <div className="flex gap-3">
+              <Button
+                onClick={handleGenerateFlashcards}
+                disabled={!materials.length}
+                className="flex-1 bg-gradient-primary hover:opacity-90 shadow-glow-purple"
+              >
+                <Sparkles className="w-4 h-4 mr-2" />
+                Generate Flashcards
+              </Button>
+              <Button
+                onClick={handleGenerateMCQ}
+                disabled={!materials.length}
+                className="flex-1 bg-gradient-primary hover:opacity-90 shadow-glow-blue"
+              >
+                <Sparkles className="w-4 h-4 mr-2" />
+                Generate Quiz
+              </Button>
+            </div>
           </CardContent>
         </Card>
 
@@ -291,29 +322,34 @@ export default function BookDetail() {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              {decks.map((deck) => (
-                <Card
-                  key={deck.id}
-                  className="bg-background/50 border-border/50 hover:shadow-glow-blue transition-all cursor-pointer"
-                  onClick={() => navigate(`/review/${deck.id}`)}
-                >
-                  <CardContent className="p-4">
-                    <div className="flex items-center justify-between mb-2">
-                      <h3 className="font-semibold">{deck.title}</h3>
-                      <span className="text-sm text-primary">{deck.card_count} cards</span>
-                    </div>
-                    {deck.due_count > 0 && (
-                      <div className="space-y-2">
-                        <div className="flex items-center justify-between text-sm">
-                          <span className="text-muted-foreground">Due for review</span>
-                          <span className="text-primary font-medium">{deck.due_count}</span>
-                        </div>
-                        <Progress value={(deck.due_count / deck.card_count) * 100} className="h-2" />
+              {decks.map((deck) => {
+                const isQuizDeck = deck.title === 'Generated Quiz';
+                const route = isQuizDeck ? `/quiz/${deck.id}` : `/review/${deck.id}`;
+                
+                return (
+                  <Card
+                    key={deck.id}
+                    className="bg-background/50 border-border/50 hover:shadow-glow-blue transition-all cursor-pointer"
+                    onClick={() => navigate(route)}
+                  >
+                    <CardContent className="p-4">
+                      <div className="flex items-center justify-between mb-2">
+                        <h3 className="font-semibold">{deck.title}</h3>
+                        <span className="text-sm text-primary">{deck.card_count} {isQuizDeck ? 'questions' : 'cards'}</span>
                       </div>
-                    )}
-                  </CardContent>
-                </Card>
-              ))}
+                      {deck.due_count > 0 && (
+                        <div className="space-y-2">
+                          <div className="flex items-center justify-between text-sm">
+                            <span className="text-muted-foreground">Due for review</span>
+                            <span className="text-primary font-medium">{deck.due_count}</span>
+                          </div>
+                          <Progress value={(deck.due_count / deck.card_count) * 100} className="h-2" />
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                );
+              })}
             </CardContent>
           </Card>
         )}
