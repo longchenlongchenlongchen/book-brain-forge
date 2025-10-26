@@ -3,8 +3,19 @@ import { useNavigate, useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { ArrowLeft, BookOpen, ZoomIn, ZoomOut, Maximize2 } from "lucide-react";
+import { ArrowLeft, BookOpen, Trash2 } from "lucide-react";
 import { toast } from "sonner";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import {
   ReactFlow,
   Node,
@@ -190,6 +201,22 @@ export default function Concepts() {
     }
   };
 
+  const handleDeleteAllConcepts = async () => {
+    try {
+      const { error } = await supabase
+        .from("concepts")
+        .delete()
+        .eq("book_id", bookId);
+
+      if (error) throw error;
+
+      toast.success("All concepts deleted successfully");
+      navigate(`/books/${bookId}`);
+    } catch (error: any) {
+      toast.error(error.message || "Failed to delete concepts");
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5 flex items-center justify-center">
@@ -217,28 +244,61 @@ export default function Concepts() {
             <h1 className="text-2xl font-bold">Key Concepts</h1>
             <p className="text-muted-foreground">{bookTitle}</p>
           </div>
-          {totalConcepts > 1 && (
-            <div className="flex items-center gap-3">
-              <Button
-                variant="outline"
-                onClick={handlePreviousConcept}
-                disabled={currentConceptIndex === 0}
-                size="sm"
-              >
-                Previous
-              </Button>
-              <span className="text-sm text-muted-foreground whitespace-nowrap">
-                Concept {currentConceptIndex + 1} of {totalConcepts}
-              </span>
-              <Button
-                variant="outline"
-                onClick={handleNextConcept}
-                disabled={currentConceptIndex === totalConcepts - 1}
-                size="sm"
-              >
-                Next
-              </Button>
-            </div>
+          {totalConcepts > 0 && (
+            <>
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="border-destructive/50 hover:bg-destructive/10 text-destructive"
+                  >
+                    <Trash2 className="w-4 h-4 mr-2" />
+                    Delete All
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Delete All Concepts?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      This will permanently delete all {totalConcepts} key concepts for this book. This action cannot be undone.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction
+                      onClick={handleDeleteAllConcepts}
+                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                    >
+                      Delete All Concepts
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+              {totalConcepts > 1 && (
+                <div className="flex items-center gap-3">
+                  <Button
+                    variant="outline"
+                    onClick={handlePreviousConcept}
+                    disabled={currentConceptIndex === 0}
+                    size="sm"
+                  >
+                    Previous
+                  </Button>
+                  <span className="text-sm text-muted-foreground whitespace-nowrap">
+                    Concept {currentConceptIndex + 1} of {totalConcepts}
+                  </span>
+                  <Button
+                    variant="outline"
+                    onClick={handleNextConcept}
+                    disabled={currentConceptIndex === totalConcepts - 1}
+                    size="sm"
+                  >
+                    Next
+                  </Button>
+                </div>
+              )}
+            </>
           )}
         </div>
       </header>

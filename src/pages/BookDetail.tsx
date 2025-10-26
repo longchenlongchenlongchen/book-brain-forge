@@ -211,6 +211,39 @@ export default function BookDetail() {
     }
   };
 
+  const handleDeleteDeck = async (deckId: string) => {
+    try {
+      // Delete deck (cards will be cascade deleted)
+      const { error } = await supabase
+        .from("decks")
+        .delete()
+        .eq("id", deckId);
+
+      if (error) throw error;
+
+      toast.success("Deck deleted successfully");
+      fetchBookData();
+    } catch (error: any) {
+      toast.error(error.message || "Failed to delete deck");
+    }
+  };
+
+  const handleDeleteAllConcepts = async () => {
+    try {
+      const { error } = await supabase
+        .from("concepts")
+        .delete()
+        .eq("book_id", bookId);
+
+      if (error) throw error;
+
+      toast.success("All concepts deleted successfully");
+      fetchBookData();
+    } catch (error: any) {
+      toast.error(error.message || "Failed to delete concepts");
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5 flex items-center justify-center">
@@ -354,15 +387,43 @@ export default function BookDetail() {
         {/* Key Concepts */}
         {conceptCount > 0 && (
           <Card className="bg-gradient-card border-border/50">
-            <CardContent className="p-6">
+            <CardContent className="p-6 flex gap-3">
               <Button
                 onClick={() => navigate(`/concepts/${bookId}`)}
-                className="w-full bg-gradient-primary hover:opacity-90 shadow-glow-purple"
+                className="flex-1 bg-gradient-primary hover:opacity-90 shadow-glow-purple"
                 size="lg"
               >
                 <BookOpen className="w-5 h-5 mr-2" />
                 View Key Concepts Structure ({conceptCount})
               </Button>
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="lg"
+                    className="border-destructive/50 hover:bg-destructive/10 text-destructive"
+                  >
+                    <Trash2 className="w-5 h-5" />
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Delete All Concepts?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      This will permanently delete all {conceptCount} key concepts for this book. This action cannot be undone.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction
+                      onClick={handleDeleteAllConcepts}
+                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                    >
+                      Delete All Concepts
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
             </CardContent>
           </Card>
         )}
@@ -384,23 +445,58 @@ export default function BookDetail() {
                 return (
                   <Card
                     key={deck.id}
-                    className="bg-background/50 border-border/50 hover:shadow-glow-blue transition-all cursor-pointer"
-                    onClick={() => navigate(route)}
+                    className="bg-background/50 border-border/50 hover:shadow-glow-blue transition-all"
                   >
                     <CardContent className="p-4">
                       <div className="flex items-center justify-between mb-2">
-                        <h3 className="font-semibold">{deck.title}</h3>
-                        <span className="text-sm text-primary">{deck.card_count} {isQuizDeck ? 'questions' : 'cards'}</span>
-                      </div>
-                      {deck.due_count > 0 && (
-                        <div className="space-y-2">
-                          <div className="flex items-center justify-between text-sm">
-                            <span className="text-muted-foreground">Due for review</span>
-                            <span className="text-primary font-medium">{deck.due_count}</span>
+                        <div 
+                          className="flex-1 cursor-pointer"
+                          onClick={() => navigate(route)}
+                        >
+                          <div className="flex items-center justify-between mb-2">
+                            <h3 className="font-semibold">{deck.title}</h3>
+                            <span className="text-sm text-primary">{deck.card_count} {isQuizDeck ? 'questions' : 'cards'}</span>
                           </div>
-                          <Progress value={(deck.due_count / deck.card_count) * 100} className="h-2" />
+                          {deck.due_count > 0 && (
+                            <div className="space-y-2">
+                              <div className="flex items-center justify-between text-sm">
+                                <span className="text-muted-foreground">Due for review</span>
+                                <span className="text-primary font-medium">{deck.due_count}</span>
+                              </div>
+                              <Progress value={(deck.due_count / deck.card_count) * 100} className="h-2" />
+                            </div>
+                          )}
                         </div>
-                      )}
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="ml-2 text-destructive hover:bg-destructive/10"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Delete {deck.title}?</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                This will permanently delete this deck and all {deck.card_count} {isQuizDeck ? 'questions' : 'cards'}. This action cannot be undone.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <AlertDialogAction
+                                onClick={() => handleDeleteDeck(deck.id)}
+                                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                              >
+                                Delete
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </div>
                     </CardContent>
                   </Card>
                 );
