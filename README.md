@@ -56,8 +56,8 @@ BookBrain is an AI-powered learning platform that converts PDF textbooks into in
 
 1. **Clone the repository**
 ```bash
-git clone <YOUR_GIT_URL>
-cd <YOUR_PROJECT_NAME>
+git clone https://github.com/longchenlongchenlongchen/book-brain-forge.git
+cd book-brain-forge
 ```
 
 2. **Install dependencies**
