@@ -12,6 +12,7 @@ interface CardData {
   answer: string;
   type: string;
   difficulty: number;
+  book_id: string;
 }
 
 export default function Review() {
@@ -21,6 +22,7 @@ export default function Review() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [showAnswer, setShowAnswer] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [bookId, setBookId] = useState<string | null>(null);
 
   useEffect(() => {
     checkAuth();
@@ -50,6 +52,9 @@ export default function Review() {
       }
 
       setCards(data);
+      if (data[0]?.book_id) {
+        setBookId(data[0].book_id);
+      }
     } catch (error: any) {
       toast.error("Failed to load cards");
       console.error(error);
@@ -92,7 +97,7 @@ export default function Review() {
         setShowAnswer(false);
       } else {
         toast.success("Review session complete!");
-        navigate(-1);
+        navigate(bookId ? `/books/${bookId}` : "/dashboard");
       }
     } catch (error: any) {
       toast.error("Failed to save review");
@@ -132,7 +137,11 @@ export default function Review() {
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5">
       <header className="border-b border-border/50 bg-card/50 backdrop-blur-sm sticky top-0 z-10">
         <div className="container mx-auto px-4 py-4 flex items-center gap-4">
-          <Button variant="ghost" onClick={() => navigate(-1)} className="gap-2">
+          <Button 
+            variant="ghost" 
+            onClick={() => bookId ? navigate(`/books/${bookId}`) : navigate("/dashboard")} 
+            className="gap-2"
+          >
             <ArrowLeft className="w-4 h-4" />
             Back
           </Button>
